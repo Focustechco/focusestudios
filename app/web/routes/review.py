@@ -36,9 +36,9 @@ def get_review(
         privacy_options = [opt.strip() for opt in account.privacy_options.split(",") if opt.strip()]
 
     return templates.TemplateResponse(
-        "review.html",
-        {
-            "request": request,
+        request=request,
+        name="review.html",
+        context={
             "title": "Revisão & Consentimento",
             "active_page": "review",
             "operation_mode": settings.OPERATION_MODE,

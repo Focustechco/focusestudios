@@ -17,9 +17,9 @@ def get_export_studio(request: Request, db: Session = Depends(get_db)):
     items = exporter.get_manual_studio_items()
 
     return templates.TemplateResponse(
-        "export_studio.html",
-        {
-            "request": request,
+        request=request,
+        name="export_studio.html",
+        context={
             "title": "TikTok Studio Manual",
             "active_page": "export_studio",
             "operation_mode": settings.OPERATION_MODE,

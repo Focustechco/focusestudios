@@ -16,9 +16,9 @@ def get_library(request: Request, db: Session = Depends(get_db)):
     assets = db.query(MediaAsset).order_by(MediaAsset.created_at.desc()).all()
 
     return templates.TemplateResponse(
-        "library.html",
-        {
-            "request": request,
+        request=request,
+        name="library.html",
+        context={
             "title": "Biblioteca de Mídia",
             "active_page": "library",
             "operation_mode": settings.OPERATION_MODE,

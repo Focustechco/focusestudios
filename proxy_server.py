@@ -1,14 +1,12 @@
 import os
 import sys
 import ssl
+import json
 import logging
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import urllib.request
-import urllib.error
-from urllib.parse import urlparse
+from socketserver import ThreadingMixIn
 from datetime import datetime, timedelta
-
-from app.config import settings
+import httpx
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [PROXY] %(message)s")
 logger = logging.getLogger("focus_proxy")
@@ -19,6 +17,9 @@ PROXY_HOST = os.environ.get("PROXY_HOST", "0.0.0.0")
 ENABLE_SSL = os.environ.get("PROXY_ENABLE_SSL", "false").lower() == "true"
 SSL_CERT_PATH = os.environ.get("PROXY_SSL_CERT", "storage/proxy_cert.pem")
 SSL_KEY_PATH = os.environ.get("PROXY_SSL_KEY", "storage/proxy_key.pem")
+
+# Pool de conexões HTTPX de alta performance sem seguir redirecionamentos (preserva 302/303)
+http_client = httpx.Client(follow_redirects=False, timeout=60.0)
 
 
 def generate_self_signed_cert(cert_path: str, key_path: str):
@@ -69,15 +70,26 @@ def generate_self_signed_cert(cert_path: str, key_path: str):
     logger.info(f"Certificado SSL autoassinado gerado em: {cert_path}")
 
 
+class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+    """Servidor multithread para evitar bloqueios concorrentes."""
+    daemon_threads = True
+
+
 class ReverseProxyHandler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
     def do_proxy(self):
-        # Healthcheck nativo do proxy
+        # 1. Healthcheck nativo do proxy
         if self.path == "/proxy-health":
-            resp_data = b'{"status":"ok","proxy":"Focus Reverse Proxy","target":"' + BACKEND_URL.encode() + b'"}'
+            resp_data = json.dumps({
+                "status": "ok",
+                "proxy": "Focus Reverse Proxy",
+                "backend_url": BACKEND_URL,
+                "ssl_enabled": ENABLE_SSL,
+                "timestamp": datetime.utcnow().isoformat()
+            }).encode("utf-8")
             self.send_response(200)
-            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(resp_data)))
             self.send_header("Connection", "close")
             self.end_headers()
@@ -92,7 +104,7 @@ class ReverseProxyHandler(BaseHTTPRequestHandler):
         # Repassa cabeçalhos do cliente com cabeçalhos de proxy reverso
         req_headers = {}
         for k, v in self.headers.items():
-            if k.lower() not in ("host", "content-length"):
+            if k.lower() not in ("host", "content-length", "connection"):
                 req_headers[k] = v
 
         client_ip = self.client_address[0]
@@ -101,39 +113,51 @@ class ReverseProxyHandler(BaseHTTPRequestHandler):
         req_headers["X-Forwarded-Host"] = self.headers.get("Host", "localhost")
         req_headers["X-Real-IP"] = client_ip
 
-        req = urllib.request.Request(target_url, data=body, headers=req_headers, method=self.command)
-
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                status_code = resp.status
-                resp_headers = resp.getheaders()
-                resp_body = resp.read()
+            resp = http_client.request(
+                method=self.command,
+                url=target_url,
+                headers=req_headers,
+                content=body
+            )
 
-                self.send_response(status_code)
-                for h_name, h_val in resp_headers:
-                    # Filtra cabeçalhos hop-by-hop
-                    if h_name.lower() not in ("transfer-encoding", "content-encoding", "content-length"):
-                        self.send_header(h_name, h_val)
-                self.send_header("Content-Length", str(len(resp_body)))
-                self.end_headers()
-                self.wfile.write(resp_body)
-
-        except urllib.error.HTTPError as e:
-            err_body = e.read()
-            self.send_response(e.code)
-            for h_name, h_val in e.headers.items():
-                if h_name.lower() not in ("transfer-encoding", "content-encoding", "content-length"):
+            self.send_response(resp.status_code)
+            for h_name, h_val in resp.headers.items():
+                if h_name.lower() not in ("transfer-encoding", "content-encoding", "content-length", "connection"):
                     self.send_header(h_name, h_val)
-            self.send_header("Content-Length", str(len(err_body)))
+
+            self.send_header("Content-Length", str(len(resp.content)))
+            self.send_header("Connection", "close")
             self.end_headers()
-            self.wfile.write(err_body)
+            self.wfile.write(resp.content)
+            self.close_connection = True
+
+        except httpx.ConnectError:
+            err_msg = json.dumps({
+                "error": "Bad Gateway - Backend Inacessivel",
+                "detail": f"Nao foi possivel conectar ao servidor FastAPI em {BACKEND_URL}. Certifique-se de que ele esteja rodando (ex: python run_with_proxy.py)."
+            }, indent=2).encode("utf-8")
+            self.send_response(502)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(err_msg)))
+            self.send_header("Connection", "close")
+            self.end_headers()
+            self.wfile.write(err_msg)
+            self.close_connection = True
 
         except Exception as ex:
-            logger.error(f"Erro ao encaminhar requisição para {target_url}: {str(ex)}")
-            self.send_response(502)
-            self.send_header("Content-Type", "application/json")
+            logger.error(f"Erro no encaminhamento do proxy para {target_url}: {str(ex)}")
+            err_msg = json.dumps({
+                "error": "Proxy Error",
+                "detail": str(ex)
+            }).encode("utf-8")
+            self.send_response(500)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(err_msg)))
+            self.send_header("Connection", "close")
             self.end_headers()
-            self.wfile.write(f'{{"error":"Bad Gateway","details":"{str(ex)}"}}'.encode())
+            self.wfile.write(err_msg)
+            self.close_connection = True
 
     def do_GET(self):
         self.do_proxy()
@@ -155,7 +179,7 @@ class ReverseProxyHandler(BaseHTTPRequestHandler):
 
 
 def run_proxy(port: int = PROXY_PORT, host: str = PROXY_HOST, enable_ssl: bool = ENABLE_SSL):
-    server = HTTPServer((host, port), ReverseProxyHandler)
+    server = ThreadedHTTPServer((host, port), ReverseProxyHandler)
     proto = "http"
 
     if enable_ssl:

@@ -13,9 +13,9 @@ templates = Jinja2Templates(directory="app/web/templates")
 @router.get("/settings", response_class=HTMLResponse)
 def get_settings(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
-        "settings.html",
-        {
-            "request": request,
+        request=request,
+        name="settings.html",
+        context={
             "title": "Configurações",
             "active_page": "settings",
             "operation_mode": settings.OPERATION_MODE,

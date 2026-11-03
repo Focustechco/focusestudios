@@ -36,9 +36,9 @@ def get_dashboard(request: Request, db: Session = Depends(get_db)):
         })
 
     return templates.TemplateResponse(
-        "dashboard.html",
-        {
-            "request": request,
+        request=request,
+        name="dashboard.html",
+        context={
             "title": "Dashboard",
             "active_page": "dashboard",
             "operation_mode": settings.OPERATION_MODE,

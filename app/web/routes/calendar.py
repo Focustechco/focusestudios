@@ -23,9 +23,9 @@ def get_calendar(request: Request, db: Session = Depends(get_db)):
     )
 
     return templates.TemplateResponse(
-        "calendar.html",
-        {
-            "request": request,
+        request=request,
+        name="calendar.html",
+        context={
             "title": "Calendário Interno",
             "active_page": "calendar",
             "operation_mode": settings.OPERATION_MODE,

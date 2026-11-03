@@ -18,9 +18,9 @@ def get_history(request: Request, db: Session = Depends(get_db)):
     audit_events = db.query(AuditEvent).order_by(AuditEvent.created_at.desc()).limit(50).all()
 
     return templates.TemplateResponse(
-        "history.html",
-        {
-            "request": request,
+        request=request,
+        name="history.html",
+        context={
             "title": "Histórico & Auditoria",
             "active_page": "history",
             "operation_mode": settings.OPERATION_MODE,

@@ -26,9 +26,9 @@ def get_connections(request: Request, db: Session = Depends(get_db)):
     account = db.query(Account).filter_by(is_active=True).first()
 
     return templates.TemplateResponse(
-        "connections.html",
-        {
-            "request": request,
+        request=request,
+        name="connections.html",
+        context={
             "title": "Conexões",
             "active_page": "connections",
             "operation_mode": settings.OPERATION_MODE,

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="top-bar">
+    <div class="page-title">
+        <h2>Configurações do Sistema</h2>
+        <p>Ajuste os parâmetros de agendamento, fuso horário, limites e inteligência artificial.</p>
+    </div>
+</div>
+
+<div class="card" style="max-width: 800px;">
+    <div class="card-header">
+        <h3 class="card-title">Parâmetros Operacionais</h3>
+    </div>
+    <div style="padding: 24px;">
+        <form action="/api/settings/update" method="POST">
+            <div class="form-group">
+                <label class="form-label">Modo de Operação</label>
+                <select name="operation_mode" class="form-control">
+                    <option value="DEMO" {% if settings.OPERATION_MODE == 'DEMO' %}selected{% endif %}>DEMO (Simulado - Seguro)</option>
+                    <option value="DIRECT_POST" {% if settings.OPERATION_MODE == 'DIRECT_POST' %}selected{% endif %}>DIRECT_POST (TikTok Content Posting API Oficial)</option>
+                    <option value="MANUAL_STUDIO" {% if settings.OPERATION_MODE == 'MANUAL_STUDIO' %}selected{% endif %}>MANUAL_STUDIO (Exportação para agendamento manual)</option>
+                    <option value="UPLOAD" {% if settings.OPERATION_MODE == 'UPLOAD' %}selected{% endif %}>UPLOAD (Inbox do Criador)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Meta Diária de Publicações</label>
+                <input type="number" name="daily_target" class="form-control" value="{{ settings.DAILY_POST_TARGET }}" min="1" max="50">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Fuso Horário</label>
+                <input type="text" class="form-control" value="{{ settings.TIMEZONE }}" readonly>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Slots Diários Configurados (America/Fortaleza)</label>
+                <input type="text" class="form-control" value="{{ settings.POST_SLOTS|join(', ') }}" readonly>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Tolerância de Atraso Pós-Indisponibilidade (Minutos)</label>
+                <input type="number" name="tolerance_minutes" class="form-control" value="{{ settings.OVERDUE_TOLERANCE_MINUTES }}">
+                <span style="font-size:12px; color:var(--text-sub);">Posts com atraso superior são postos em revisão para evitar rajadas e ban por spam.</span>
+            </div>
+
+            <div style="background-color: var(--bg-main); padding: 16px; border-radius: 6px; margin-bottom: 20px;">
+                <label class="form-checkbox">
+                    <input type="checkbox" name="ai_caption_enabled" value="true" {% if settings.AI_CAPTION_ENABLED %}checked{% endif %}>
+                    <strong>Ativar Sugestão de Legenda por IA (Opcional)</strong>
+                </label>
+                <p style="font-size:12px; color:var(--text-sub); margin-top:6px;">
+                    Por padrão desativada. Quando ativada, respeita os fatos do vídeo e nunca inventa dados sobre o arquivo.
+                </p>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Salvar Parâmetros</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

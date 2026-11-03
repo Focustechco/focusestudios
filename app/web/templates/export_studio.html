@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="top-bar">
+    <div class="page-title">
+        <h2>Pacote de Preparação para TikTok Studio (Modo Manual)</h2>
+        <p>Solução oficial de contingência para agendamento manual na interface web do TikTok Studio.</p>
+    </div>
+    <div class="top-actions">
+        <a href="/api/export/studio/manifest.csv" class="btn btn-primary" download>
+            Baixar Manifesto CSV
+        </a>
+    </div>
+</div>
+
+<div class="alert-banner alert-demo" style="background-color: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: #fbbf24;">
+    <strong>Declaração de Limitação de API:</strong> O TikTok Studio Web não disponibiliza API pública para agendamento na interface. Este módulo prepara o material homologado para agendamento manual sem contornar termos de serviço ou usar automações não autorizadas.
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Fila de Publicações Homologadas para Inserção Manual ({{ items|length }})</h3>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Horário Recomendado</th>
+                    <th>Arquivo do Vídeo</th>
+                    <th>Privacidade</th>
+                    <th>Legenda & Hashtags</th>
+                    <th>Status no Studio</th>
+                    <th>Ações Rápidas</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td style="font-weight: 700; color: #fff;">{{ item.time_fortaleza }}</td>
+                    <td><strong>{{ item.video_name }}</strong></td>
+                    <td><span class="badge badge-ready">{{ item.privacy_level }}</span></td>
+                    <td style="max-width: 380px;">
+                        <textarea class="form-control" rows="2" readonly id="caption_{{ loop.index }}" style="font-size:12px;">{{ item.full_caption }}</textarea>
+                    </td>
+                    <td>
+                        <span class="badge badge-review">{{ item.status_label }}</span>
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-secondary btn-sm" id="btn_copy_{{ loop.index }}" onclick="copyToClipboard(document.getElementById('caption_{{ loop.index }}').value, 'btn_copy_{{ loop.index }}')">
+                            Copiar Legenda
+                        </button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align:center; color:var(--text-sub); padding:32px;">
+                        Nenhum vídeo preparado no momento. Aprove vídeos na aba de Revisão primeiro.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

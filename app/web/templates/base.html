@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} | Focus Publisher</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="/static/js/app.js"></script>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-logo">F</div>
+            <div class="brand-text">
+                <h1>FOCUS TECH</h1>
+                <span class="brand-badge">{{ operation_mode }}</span>
+            </div>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">
+                <a href="/">Dashboard</a>
+            </li>
+            <li class="nav-item {% if active_page == 'connections' %}active{% endif %}">
+                <a href="/connections">Conexões & OAuth</a>
+            </li>
+            <li class="nav-item {% if active_page == 'library' %}active{% endif %}">
+                <a href="/library">Biblioteca de Vídeos</a>
+            </li>
+            <li class="nav-item {% if active_page == 'review' %}active{% endif %}">
+                <a href="/review">Revisão & Consentimento</a>
+            </li>
+            <li class="nav-item {% if active_page == 'calendar' %}active{% endif %}">
+                <a href="/calendar">Calendário (10/dia)</a>
+            </li>
+            <li class="nav-item {% if active_page == 'export_studio' %}active{% endif %}">
+                <a href="/export/studio">TikTok Studio Manual</a>
+            </li>
+            <li class="nav-item {% if active_page == 'history' %}active{% endif %}">
+                <a href="/history">Histórico & Logs</a>
+            </li>
+            <li class="nav-item {% if active_page == 'settings' %}active{% endif %}">
+                <a href="/settings">Configurações</a>
+            </li>
+        </ul>
+        <div class="sidebar-footer">
+            <p>Fuso: <strong>{{ timezone }}</strong></p>
+            <p style="margin-top:4px;">Focus Publisher v1.0.0</p>
+        </div>
+    </aside>
+
+    <main class="main-wrapper">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

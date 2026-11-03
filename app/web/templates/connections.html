@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="top-bar">
+    <div class="page-title">
+        <h2>Conexões & Provedores Autorizados</h2>
+        <p>Gerencie a autorização da pasta do Google Drive e credenciais oficiais da TikTok Content Posting API.</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+    <!-- Google Drive Card -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Google Drive (Pasta de Origem)</h3>
+            <span class="badge badge-published">Conectado</span>
+        </div>
+        <div style="padding: 20px;">
+            <div style="margin-bottom: 16px;">
+                <label class="form-label">ID da Pasta Autorizada</label>
+                <input type="text" class="form-control" value="{{ drive_source.folder_id }}" readonly>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label class="form-label">Nome da Origem</label>
+                <input type="text" class="form-control" value="{{ drive_source.name }}" readonly>
+            </div>
+            <div style="margin-bottom: 16px; font-size: 13px; color: var(--text-muted);">
+                <p>Última Sincronização: <strong>{{ drive_source.last_synced_at or 'Pendente' }}</strong></p>
+                <p style="margin-top:4px;">Subpastas Inclusas: <strong>{{ 'Sim' if drive_source.include_subfolders else 'Não (Segurança Ativa)' }}</strong></p>
+                <p style="margin-top:4px;">Política: <strong>FIFO (Arquivos mais antigos primeiro)</strong></p>
+            </div>
+            <form action="/api/sync-now" method="POST">
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Sincronizar Pasta Agora</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- TikTok Card -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">TikTok Developer API</h3>
+            {% if account and account.is_eligible %}
+            <span class="badge badge-published">Elegível & Ativo</span>
+            {% elif account %}
+            <span class="badge badge-review">Sandbox / Pendente</span>
+            {% else %}
+            <span class="badge badge-failed">Não Conectado</span>
+            {% endif %}
+        </div>
+        <div style="padding: 20px;">
+            {% if account %}
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+                <img src="{{ account.avatar_url or 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150' }}" style="width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--focus-orange);">
+                <div>
+                    <h4 style="font-size: 16px;">{{ account.display_name }}</h4>
+                    <p style="font-size: 13px; color: var(--text-muted);">{{ account.username }}</p>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px; font-size: 13px; color: var(--text-muted);">
+                <p>Opções de Privacidade Retornadas: <strong>{{ account.privacy_options }}</strong></p>
+                <p style="margin-top:4px;">Duração Máx Permitida: <strong>{{ account.max_video_duration_sec }}s</strong></p>
+                <p style="margin-top:4px;">Status de Token: <strong>{{ 'Válido' if not account.is_token_expired() else 'Expirado' }}</strong></p>
+                <p style="margin-top:4px;">Elegibilidade: <strong>{{ account.eligibility_notes }}</strong></p>
+            </div>
+            {% else %}
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
+                Nenhuma conta TikTok vinculada. Conecte sua conta oficial via OAuth 2.0 para habilitar a postagem direta ou continue utilizando o modo DEMO/Manual.
+            </p>
+            {% endif %}
+
+            <div style="display:flex; gap: 10px;">
+                <a href="/connections/tiktok/login" class="btn btn-secondary" style="flex:1; text-align:center;">
+                    Autorizar via TikTok OAuth
+                </a>
+                <form action="/api/connections/toggle-mode" method="POST" style="flex:1;">
+                    <button type="submit" class="btn btn-primary" style="width:100%;">
+                        Alternar Modo ({{ operation_mode }})
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

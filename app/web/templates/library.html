@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="top-bar">
+    <div class="page-title">
+        <h2>Biblioteca de Mídia & Inspeção Técnica</h2>
+        <p>Vídeos ingeridos do Google Drive inspecionados via ffprobe e deduplicados por SHA-256.</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Mídias Descobertas ({{ assets|length }})</h3>
+        <form action="/api/inspect-all" method="POST">
+            <button type="submit" class="btn btn-secondary btn-sm">Re-inspecionar Pendentes</button>
+        </form>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome do Arquivo</th>
+                    <th>Duração</th>
+                    <th>Resolução / Aspecto</th>
+                    <th>Codecs</th>
+                    <th>Hash SHA-256</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for asset in assets %}
+                <tr>
+                    <td>
+                        <div style="font-weight:600;">{{ asset.name }}</div>
+                        <div style="font-size:11px; color:var(--text-sub);">{{ (asset.file_size_bytes / (1024*1024))|round(1) }} MB</div>
+                    </td>
+                    <td>{{ asset.duration_seconds|round(1) }}s</td>
+                    <td>
+                        <div>{{ asset.width }}x{{ asset.height }}</div>
+                        <div style="font-size:11px; color:var(--text-sub);">{{ asset.aspect_ratio }}</div>
+                    </td>
+                    <td>
+                        <div>{{ asset.video_codec }}</div>
+                        <div style="font-size:11px; color:var(--text-sub);">Áudio: {{ asset.audio_codec or 'N/A' }}</div>
+                    </td>
+                    <td style="font-family: monospace; font-size: 11px; color: var(--text-muted);">
+                        {{ asset.sha256_hash[:16] }}...
+                    </td>
+                    <td>
+                        <span class="badge badge-{{ asset.status.lower() }}">{{ asset.status }}</span>
+                    </td>
+                    <td>
+                        <a href="/review?asset_id={{ asset.id }}" class="btn btn-primary btn-sm">
+                            Revisar / Legenda
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-sub); padding: 32px;">
+                        Nenhum vídeo importado ainda. Clique em "Sincronizar Drive Agora" no Dashboard.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="top-bar">
+    <div class="page-title">
+        <h2>Histórico de Publicações & Auditoria</h2>
+        <p>Registro estruturado de tentativas de envio, publish_ids e log de eventos.</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Tentativas de Publicação</h3>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Data / Hora</th>
+                    <th>Post / Vídeo</th>
+                    <th>Tentativa</th>
+                    <th>TikTok Publish ID</th>
+                    <th>Status</th>
+                    <th>Diagnóstico / Erro</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for att in attempts %}
+                <tr>
+                    <td>{{ att.started_at.strftime('%d/%m/%Y %H:%M:%S') if att.started_at else '-' }}</td>
+                    <td><strong>{{ att.scheduled_post.post_draft.title if att.scheduled_post and att.scheduled_post.post_draft else 'N/A' }}</strong></td>
+                    <td>#{{ att.attempt_number }}</td>
+                    <td style="font-family: monospace; font-size:12px;">{{ att.publish_id or '-' }}</td>
+                    <td><span class="badge badge-{{ att.status.lower() }}">{{ att.status }}</span></td>
+                    <td style="font-size:12px; color: {% if att.status == 'FAILED' %}#ef4444{% else %}var(--text-sub){% endif %};">
+                        {{ att.error_message or 'Sucesso na comunicação' }}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align:center; color:var(--text-sub); padding:32px;">
+                        Nenhuma tentativa de publicação registrada até o momento.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Eventos de Auditoria</h3>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Ação</th>
+                    <th>Origem / Usuário</th>
+                    <th>Detalhes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ev in audit_events %}
+                <tr>
+                    <td>{{ ev.created_at.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                    <td><strong>{{ ev.action }}</strong></td>
+                    <td>{{ ev.user_or_system }}</td>
+                    <td style="font-size:12px; color:var(--text-muted);">{{ ev.details }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" style="text-align:center; color:var(--text-sub); padding:32px;">
+                        Nenhum evento registrado.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

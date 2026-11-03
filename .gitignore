@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.db
+*.sqlite3
+storage/media/*
+!storage/media/.gitkeep
+storage/thumbnails/*
+!storage/thumbnails/.gitkeep
+storage/exports/*
+!storage/exports/.gitkeep
+.env

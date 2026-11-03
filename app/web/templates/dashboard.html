@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="top-bar">
+    <div class="page-title">
+        <h2>Dashboard de Publicação</h2>
+        <p>Visão geral da esteira de distribuição, estoque e metas diárias no fuso de Fortaleza.</p>
+    </div>
+    <div class="top-actions">
+        <form action="/api/sync-now" method="POST" style="display:inline;">
+            <button type="submit" class="btn btn-secondary">
+                Sincronizar Drive Agora
+            </button>
+        </form>
+        <form action="/api/schedule-batch" method="POST" style="display:inline;">
+            <button type="submit" class="btn btn-primary">
+                Distribuir 10/dia
+            </button>
+        </form>
+    </div>
+</div>
+
+{% if metrics.operation_mode == "DEMO" %}
+<div class="alert-banner alert-demo">
+    <strong>Modo DEMO Ativo:</strong> As publicações são executadas via adaptadores simulados. Nenhum dado é postado na conta oficial do TikTok.
+</div>
+{% elif metrics.is_blocked %}
+<div class="alert-banner alert-blocked">
+    <strong>Produção Bloqueada:</strong> A conta TikTok selecionada não possui token OAuth ativo ou elegibilidade Direct Post aprovada pela ByteDance.
+</div>
+{% endif %}
+
+<div class="metrics-grid">
+    <div class="metric-card">
+        <span class="metric-title">Meta Diária</span>
+        <span class="metric-value">{{ metrics.daily_target }}</span>
+        <span class="metric-sub">posts / dia configurados</span>
+    </div>
+    <div class="metric-card">
+        <span class="metric-title">Programados Hoje</span>
+        <span class="metric-value">{{ metrics.today_scheduled }}</span>
+        <span class="metric-sub">{{ metrics.today_published }} já confirmados</span>
+    </div>
+    <div class="metric-card">
+        <span class="metric-title">Déficit do Dia</span>
+        <span class="metric-value" style="color: {% if metrics.daily_deficit > 0 %}#f59e0b{% else %}#10b981{% endif %};">
+            {{ metrics.daily_deficit }}
+        </span>
+        <span class="metric-sub">{% if metrics.daily_deficit > 0 %}Vídeos faltantes para a meta{% else %}Meta diária coberta{% endif %}</span>
+    </div>
+    <div class="metric-card">
+        <span class="metric-title">Estoque Disponível</span>
+        <span class="metric-value">{{ metrics.available_stock }}</span>
+        <span class="metric-sub">vídeos não publicados</span>
+    </div>
+    <div class="metric-card">
+        <span class="metric-title">Cobertura de Estoque</span>
+        <span class="metric-value">{{ metrics.coverage_days }}d</span>
+        <span class="metric-sub">dias de operação garantidos</span>
+    </div>
+    <div class="metric-card">
+        <span class="metric-title">Pendências / Falhas</span>
+        <span class="metric-value" style="color: {% if metrics.failed_count > 0 %}#ef4444{% else %}#9ca3af{% endif %};">
+            {{ metrics.failed_count }}
+        </span>
+        <span class="metric-sub">exigem ação do operador</span>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Próximas Publicações Agendadas (Fuso America/Fortaleza)</h3>
+        <a href="/calendar" class="btn btn-secondary btn-sm">Ver Calendário Completo</a>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Horário</th>
+                    <th>Título / Vídeo</th>
+                    <th>Privacidade</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in upcoming_posts %}
+                <tr>
+                    <td style="font-weight: 600;">{{ item.time_fortaleza }}</td>
+                    <td>
+                        <div style="font-weight:600;">{{ item.title }}</div>
+                        <div style="font-size:12px; color:var(--text-sub);">{{ item.caption[:60] }}...</div>
+                    </td>
+                    <td><span class="badge badge-ready">{{ item.privacy }}</span></td>
+                    <td>
+                        <span class="badge badge-{{ item.status.lower() }}">{{ item.status }}</span>
+                    </td>
+                    <td>
+                        {% if item.status == 'SCHEDULED' %}
+                        <form action="/api/posts/{{ item.id }}/cancel" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm">Cancelar</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-sub); padding: 32px;">
+                        Nenhuma publicação agendada para hoje. Sincronize novos vídeos ou aprove rascunhos para preencher a meta.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

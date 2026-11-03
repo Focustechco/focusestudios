@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="top-bar">
+    <div class="page-title">
+        <h2>Revisão, Conformidade & Consentimento Individual</h2>
+        <p>Aprovação explícita e geração de hash criptográfico pré-agendamento conforme as diretrizes TikTok.</p>
+    </div>
+</div>
+
+{% if selected_draft %}
+<div class="card" style="border: 1px solid var(--focus-orange);">
+    <div class="card-header" style="background-color: var(--focus-orange-dim);">
+        <h3 class="card-title">Editando Rascunho: {{ selected_draft.media_asset.name }}</h3>
+        <span class="badge badge-{{ selected_draft.status.lower() }}">{{ selected_draft.status }}</span>
+    </div>
+    <div style="padding: 24px;">
+        <form action="/api/drafts/{{ selected_draft.id }}/update-and-approve" method="POST">
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+                <div>
+                    <div class="form-group">
+                        <label class="form-label">Título do Post</label>
+                        <input type="text" name="title" class="form-control" value="{{ selected_draft.title }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Legenda Completa</label>
+                        <textarea name="caption" class="form-control" rows="4">{{ selected_draft.caption }}</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Hashtags (#)</label>
+                        <input type="text" name="hashtags" class="form-control" value="{{ selected_draft.hashtags }}">
+                    </div>
+                </div>
+
+                <div>
+                    <div class="form-group">
+                        <label class="form-label">Nível de Privacidade (Opções Reais do Criador)</label>
+                        <select name="privacy_level" class="form-control">
+                            {% for opt in privacy_options %}
+                            <option value="{{ opt }}" {% if selected_draft.privacy_level == opt %}selected{% endif %}>
+                                {{ opt }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div style="background-color: var(--bg-main); padding: 14px; border-radius: 6px; margin-bottom: 16px;">
+                        <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+                            Permissões de Interação
+                        </span>
+                        <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                            <label class="form-checkbox">
+                                <input type="checkbox" name="disable_comment" value="true" {% if selected_draft.disable_comment %}checked{% endif %}>
+                                Desativar Comentários
+                            </label>
+                            <label class="form-checkbox">
+                                <input type="checkbox" name="disable_duet" value="true" {% if selected_draft.disable_duet %}checked{% endif %}>
+                                Desativar Dueto
+                            </label>
+                            <label class="form-checkbox">
+                                <input type="checkbox" name="disable_stitch" value="true" {% if selected_draft.disable_stitch %}checked{% endif %}>
+                                Desativar Costura (Stitch)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="background-color: var(--bg-main); padding: 14px; border-radius: 6px; margin-bottom: 16px;">
+                        <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+                            Declarações Regulatórias TikTok
+                        </span>
+                        <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                            <label class="form-checkbox">
+                                <input type="checkbox" name="is_aigc" value="true" {% if selected_draft.is_aigc %}checked{% endif %}>
+                                Conteúdo Gerado por IA (AIGC)
+                            </label>
+                            <label class="form-checkbox">
+                                <input type="checkbox" name="brand_content_toggle" value="true" {% if selected_draft.brand_content_toggle %}checked{% endif %}>
+                                Conteúdo Comercial / Parceria Paga
+                            </label>
+                            <label class="form-checkbox">
+                                <input type="checkbox" name="brand_organic_toggle" value="true" {% if selected_draft.brand_organic_toggle %}checked{% endif %}>
+                                Divulgação de Marca Própria
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--border-color); padding-top: 18px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <p style="font-size: 12px; color: var(--text-muted); max-width: 600px;">
+                    * Ao aprovar, o Focus Publisher gera um hash criptográfico (SHA-256) atestando seu consentimento para esta versão exata. Qualquer edição posterior anula a aprovação automaticamente.
+                </p>
+                <div style="display:flex; gap:12px;">
+                    <button type="submit" name="action" value="save_only" class="btn btn-secondary">
+                        Salvar Rascunho
+                    </button>
+                    <button type="submit" name="action" value="approve" class="btn btn-primary">
+                        Consentir & Aprovar Post
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Fila de Rascunhos para Revisão ({{ drafts|length }})</h3>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Vídeo</th>
+                    <th>Título / Legenda</th>
+                    <th>Privacidade</th>
+                    <th>Status</th>
+                    <th>Consentimento</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for draft in drafts %}
+                <tr>
+                    <td><strong>{{ draft.media_asset.name }}</strong></td>
+                    <td>
+                        <div style="font-weight:600;">{{ draft.title }}</div>
+                        <div style="font-size:12px; color:var(--text-sub);">{{ draft.caption[:50] }}...</div>
+                    </td>
+                    <td><span class="badge badge-ready">{{ draft.privacy_level }}</span></td>
+                    <td><span class="badge badge-{{ draft.status.lower() }}">{{ draft.status }}</span></td>
+                    <td>
+                        {% if draft.status == 'APPROVED' %}
+                        <span class="badge badge-published">Assinado (Ativo)</span>
+                        {% else %}
+                        <span class="badge badge-review">Pendente</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/review?draft_id={{ draft.id }}" class="btn btn-secondary btn-sm">
+                            Editar / Consentir
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align:center; color:var(--text-sub); padding:32px;">
+                        Nenhum rascunho pendente de revisão no momento.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

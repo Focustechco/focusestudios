@@ -1,0 +1,186 @@
+import os
+import sys
+import ssl
+import logging
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import urllib.request
+import urllib.error
+from urllib.parse import urlparse
+from datetime import datetime, timedelta
+
+from app.config import settings
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [PROXY] %(message)s")
+logger = logging.getLogger("focus_proxy")
+
+BACKEND_URL = os.environ.get("PROXY_BACKEND_URL", "http://127.0.0.1:8000")
+PROXY_PORT = int(os.environ.get("PROXY_PORT", "8080"))
+PROXY_HOST = os.environ.get("PROXY_HOST", "0.0.0.0")
+ENABLE_SSL = os.environ.get("PROXY_ENABLE_SSL", "false").lower() == "true"
+SSL_CERT_PATH = os.environ.get("PROXY_SSL_CERT", "storage/proxy_cert.pem")
+SSL_KEY_PATH = os.environ.get("PROXY_SSL_KEY", "storage/proxy_key.pem")
+
+
+def generate_self_signed_cert(cert_path: str, key_path: str):
+    """Gera certificado SSL autoassinado para testes locais HTTPS com OAuth."""
+    from cryptography import x509
+    from cryptography.x509.oid import NameOID
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.hazmat.primitives import serialization
+    import ipaddress
+
+    os.makedirs(os.path.dirname(cert_path), exist_ok=True)
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+
+    subject = issuer = x509.Name([
+        x509.NameAttribute(NameOID.COMMON_NAME, u"localhost"),
+        x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"Focus Tech"),
+    ])
+
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(issuer)
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(datetime.utcnow())
+        .not_valid_after(datetime.utcnow() + timedelta(days=365))
+        .add_extension(
+            x509.SubjectAlternativeName([
+                x509.DNSName(u"localhost"),
+                x509.IPAddress(ipaddress.IPv4Address("127.0.0.1"))
+            ]),
+            critical=False,
+        )
+        .sign(key, hashes.SHA256())
+    )
+
+    with open(key_path, "wb") as f:
+        f.write(key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption(),
+        ))
+
+    with open(cert_path, "wb") as f:
+        f.write(cert.public_bytes(serialization.Encoding.PEM))
+
+    logger.info(f"Certificado SSL autoassinado gerado em: {cert_path}")
+
+
+class ReverseProxyHandler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
+    def do_proxy(self):
+        # Healthcheck nativo do proxy
+        if self.path == "/proxy-health":
+            resp_data = b'{"status":"ok","proxy":"Focus Reverse Proxy","target":"' + BACKEND_URL.encode() + b'"}'
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(resp_data)))
+            self.send_header("Connection", "close")
+            self.end_headers()
+            self.wfile.write(resp_data)
+            self.close_connection = True
+            return
+
+        target_url = f"{BACKEND_URL.rstrip('/')}{self.path}"
+        content_length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_length) if content_length > 0 else None
+
+        # Repassa cabeçalhos do cliente com cabeçalhos de proxy reverso
+        req_headers = {}
+        for k, v in self.headers.items():
+            if k.lower() not in ("host", "content-length"):
+                req_headers[k] = v
+
+        client_ip = self.client_address[0]
+        req_headers["X-Forwarded-For"] = client_ip
+        req_headers["X-Forwarded-Proto"] = "https" if ENABLE_SSL else "http"
+        req_headers["X-Forwarded-Host"] = self.headers.get("Host", "localhost")
+        req_headers["X-Real-IP"] = client_ip
+
+        req = urllib.request.Request(target_url, data=body, headers=req_headers, method=self.command)
+
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                status_code = resp.status
+                resp_headers = resp.getheaders()
+                resp_body = resp.read()
+
+                self.send_response(status_code)
+                for h_name, h_val in resp_headers:
+                    # Filtra cabeçalhos hop-by-hop
+                    if h_name.lower() not in ("transfer-encoding", "content-encoding", "content-length"):
+                        self.send_header(h_name, h_val)
+                self.send_header("Content-Length", str(len(resp_body)))
+                self.end_headers()
+                self.wfile.write(resp_body)
+
+        except urllib.error.HTTPError as e:
+            err_body = e.read()
+            self.send_response(e.code)
+            for h_name, h_val in e.headers.items():
+                if h_name.lower() not in ("transfer-encoding", "content-encoding", "content-length"):
+                    self.send_header(h_name, h_val)
+            self.send_header("Content-Length", str(len(err_body)))
+            self.end_headers()
+            self.wfile.write(err_body)
+
+        except Exception as ex:
+            logger.error(f"Erro ao encaminhar requisição para {target_url}: {str(ex)}")
+            self.send_response(502)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(f'{{"error":"Bad Gateway","details":"{str(ex)}"}}'.encode())
+
+    def do_GET(self):
+        self.do_proxy()
+
+    def do_POST(self):
+        self.do_proxy()
+
+    def do_PUT(self):
+        self.do_proxy()
+
+    def do_DELETE(self):
+        self.do_proxy()
+
+    def do_HEAD(self):
+        self.do_proxy()
+
+    def log_message(self, format, *args):
+        logger.info(f"{self.client_address[0]} - {self.command} {self.path} - {args[1] if len(args) > 1 else ''}")
+
+
+def run_proxy(port: int = PROXY_PORT, host: str = PROXY_HOST, enable_ssl: bool = ENABLE_SSL):
+    server = HTTPServer((host, port), ReverseProxyHandler)
+    proto = "http"
+
+    if enable_ssl:
+        if not (os.path.exists(SSL_CERT_PATH) and os.path.exists(SSL_KEY_PATH)):
+            generate_self_signed_cert(SSL_CERT_PATH, SSL_KEY_PATH)
+
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(certfile=SSL_CERT_PATH, keyfile=SSL_KEY_PATH)
+        server.socket = context.wrap_socket(server.socket, server_side=True)
+        proto = "https"
+
+    print("=" * 70)
+    print("  FOCUS PUBLISHER - SERVIDOR PROXY REVERSO ATIVO")
+    print(f"  Ouvindo em: {proto}://{host if host != '0.0.0.0' else '127.0.0.1'}:{port}")
+    print(f"  Encaminhando para: {BACKEND_URL}")
+    print(f"  SSL Ativo: {'Sim' if enable_ssl else 'Não (HTTP)'}")
+    print("=" * 70)
+
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        logger.info("Servidor proxy encerrado pelo operador.")
+    finally:
+        server.server_close()
+
+
+if __name__ == "__main__":
+    run_proxy()

@@ -1,0 +1,32 @@
+{
+    email {$ACME_EMAIL:-admin@focustech.local}
+    # Em ambiente de desenvolvimento local, habilita certificado interno autoassinado
+    local_certs
+}
+
+{$DOMAIN:-localhost} {
+    # Proxy reverso para o serviço FastAPI
+    reverse_proxy web:8000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # Cabeçalhos de segurança
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    # Compressão gzip e zstd
+    encode zstd gzip
+
+    # Log de acesso estruturado
+    log {
+        output stdout
+        format console
+    }
+}

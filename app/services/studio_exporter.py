@@ -1,7 +1,7 @@
 import csv
 import io
 import os
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 from app.models.scheduled_post import ScheduledPost
 from app.core.timezone import to_fortaleza, format_fortaleza

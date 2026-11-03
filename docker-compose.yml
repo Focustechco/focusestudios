@@ -111,7 +111,31 @@ services:
         limits:
           memory: 512M
 
+  proxy:
+    image: caddy:2-alpine
+    container_name: focus_proxy
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@focustech.local}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
 volumes:
   postgres_data:
   redis_data:
   storage_data:
+  caddy_data:
+  caddy_config:

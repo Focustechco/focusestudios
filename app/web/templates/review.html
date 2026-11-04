@@ -15,6 +15,18 @@
         <span class="badge badge-{{ selected_draft.status.lower() }}">{{ selected_draft.status }}</span>
     </div>
     <div style="padding: 24px;">
+        <!-- Player de Vídeo em Destaque na Revisão -->
+        <div style="margin-bottom: 24px; background: #000; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px; border: 1px solid var(--border-color);">
+            <video src="/api/media/{{ selected_draft.media_asset_id }}/video" controls playsinline style="max-height: 320px; max-width: 100%; border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.4);">
+                Seu navegador não suporta reprodução de vídeo HTML5.
+            </video>
+            <div style="margin-top: 10px; font-size: 12px; color: var(--text-muted); display: flex; gap: 16px; flex-wrap: wrap;">
+                <span>Arquivo: <strong>{{ selected_draft.media_asset.name }}</strong></span>
+                <span>Duração: <strong>{{ (selected_draft.media_asset.duration_seconds or 0)|round(1) }}s</strong></span>
+                <span>Resolução: <strong>{{ selected_draft.media_asset.width }}x{{ selected_draft.media_asset.height }}</strong></span>
+            </div>
+        </div>
+
         <form action="/api/drafts/{{ selected_draft.id }}/update-and-approve" method="POST">
             <div class="review-editor-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
                 <div>
@@ -140,9 +152,14 @@
                         {% endif %}
                     </td>
                     <td>
-                        <a href="/review?draft_id={{ draft.id }}" class="btn btn-secondary btn-sm">
-                            Editar / Consentir
-                        </a>
+                        <div style="display:flex; gap:8px;">
+                            <a href="/review?draft_id={{ draft.id }}" class="btn btn-secondary btn-sm">
+                                Editar / Consentir
+                            </a>
+                            <a href="/api/media/{{ draft.media_asset_id }}/video" target="_blank" class="btn btn-secondary btn-sm" title="Assistir vídeo em nova aba">
+                                Assistir
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {% else %}

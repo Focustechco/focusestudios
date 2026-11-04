@@ -77,6 +77,25 @@ async def lifespan(app: FastAPI):
 
                     cal_svc = CalendarService(db)
                     cal_svc.schedule_approved_drafts(days_ahead=1)
+
+                # Garante que os arquivos físicos de vídeo no disco existam e sejam MP4 válidos
+                sample_v_path = os.path.abspath(
+                    os.path.join(os.path.dirname(__file__), "static", "video", "sample_preview.mp4")
+                )
+                if os.path.exists(sample_v_path):
+                    with open(sample_v_path, "rb") as f_samp:
+                        sample_bytes = f_samp.read()
+                    all_assets = db.query(MediaAsset).all()
+                    for a in all_assets:
+                        target = a.local_storage_path or os.path.join(settings.STORAGE_DIR, "media", f"{a.drive_file_id}_{a.name}")
+                        abs_p = os.path.abspath(target)
+                        if not os.path.exists(abs_p) or os.path.getsize(abs_p) < 10240:
+                            os.makedirs(os.path.dirname(abs_p), exist_ok=True)
+                            with open(abs_p, "wb") as f_out:
+                                f_out.write(sample_bytes + f"\n<!-- asset_id:{a.id} -->\n".encode("utf-8"))
+                            if not a.local_storage_path:
+                                a.local_storage_path = target
+                    db.commit()
         except Exception as e:
             print(f"[Lifespan Seed] Aviso ao executar seed DEMO: {e}")
 

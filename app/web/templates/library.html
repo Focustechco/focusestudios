@@ -51,9 +51,14 @@
                         <span class="badge badge-{{ asset.status.lower() }}">{{ asset.status }}</span>
                     </td>
                     <td>
-                        <a href="/review?asset_id={{ asset.id }}" class="btn btn-primary btn-sm">
-                            Revisar / Legenda
-                        </a>
+                        <div style="display:flex; gap:8px;">
+                            <a href="/api/media/{{ asset.id }}/video" target="_blank" class="btn btn-secondary btn-sm" title="Assistir vídeo em nova aba">
+                                Assistir
+                            </a>
+                            <a href="/review?asset_id={{ asset.id }}" class="btn btn-primary btn-sm">
+                                Revisar / Legenda
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {% else %}

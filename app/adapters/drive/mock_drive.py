@@ -61,11 +61,23 @@ class MockDriveAdapter(BaseDriveAdapter):
         return results, next_page
 
     def download_file(self, file_id: str, target_path: str) -> str:
-        """Gera um arquivo sintético simulando o download do vídeo e retorna seu SHA-256."""
+        """Gera ou copia um arquivo MP4 real e retorna seu SHA-256 único."""
         os.makedirs(os.path.dirname(target_path), exist_ok=True)
-        synthetic_content = f"FOCUS_PUBLISHER_SYNTHETIC_MEDIA_PAYLOAD_FOR_{file_id}".encode("utf-8") * 100
+        
+        sample_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "web", "static", "video", "sample_preview.mp4")
+        )
+        
+        if os.path.exists(sample_path):
+            with open(sample_path, "rb") as sf:
+                sample_bytes = sf.read()
+            # Trailer seguro para diferenciar o hash SHA-256 de cada vídeo de exemplo
+            content = sample_bytes + f"\n<!-- file_id:{file_id} -->\n".encode("utf-8")
+        else:
+            content = f"FOCUS_PUBLISHER_SYNTHETIC_MEDIA_PAYLOAD_FOR_{file_id}".encode("utf-8") * 100
         
         with open(target_path, "wb") as f:
-            f.write(synthetic_content)
+            f.write(content)
         
-        return hashlib.sha256(synthetic_content).hexdigest()
+        return hashlib.sha256(content).hexdigest()
+

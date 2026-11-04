@@ -23,7 +23,7 @@ class Account(Base):
     _refresh_token_encrypted = Column("refresh_token", Text, nullable=True)
     token_expires_at = Column(DateTime, nullable=True)
     refresh_expires_at = Column(DateTime, nullable=True)
-    scopes = Column(String(255), default="user.info.basic,video.publish", nullable=False)
+    scopes = Column(String(255), default="user.info.basic,video.upload", nullable=False)
 
     # Capacidades e Elegibilidade consultadas via /v2/post/publish/creator_info/query/
     privacy_options = Column(Text, default="PUBLIC_TO_EVERYONE,MUTUAL_FOLLOW_FRIENDS,SELF_ONLY")
@@ -59,6 +59,12 @@ class Account(Base):
     @refresh_token.setter
     def refresh_token(self, value: str):
         self._refresh_token_encrypted = token_cipher.encrypt(value)
+
+    def set_access_token(self, value: str):
+        self.access_token = value
+
+    def set_refresh_token(self, value: str):
+        self.refresh_token = value
 
     def is_token_expired(self) -> bool:
         if not self.token_expires_at:

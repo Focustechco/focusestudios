@@ -41,7 +41,15 @@ class GoogleDriveAdapter(BaseDriveAdapter):
             )
             return build("drive", "v3", credentials=creds)
 
-        # Se não configurado, opera em modo unauthenticated / requer setup
+        # 3. Tentar OAuth 2.0 de Usuário via token.json (Bypass de política organizacional)
+        token_path = "secrets/google_token.json"
+        if os.path.exists(token_path):
+            creds = Credentials.from_authorized_user_file(
+                token_path,
+                scopes=["https://www.googleapis.com/auth/drive.readonly"]
+            )
+            return build("drive", "v3", credentials=creds)
+
         return None
 
     def list_files(
@@ -55,7 +63,7 @@ class GoogleDriveAdapter(BaseDriveAdapter):
                 "Credenciais do Google Drive não configuradas. Use GOOGLE_SERVICE_ACCOUNT_JSON ou opere em modo DEMO."
             )
 
-        query = f"'{folder_id}' in parents and trashed = false and mimeType != 'application/vnd.google-apps.folder'"
+        query = f"'{folder_id}' in parents and trashed = false and mimeType != 'application/vnd.google-apps.folder' and mimeType contains 'video/'"
 
         request = self.service.files().list(
             q=query,

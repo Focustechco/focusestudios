@@ -147,9 +147,12 @@ class PublisherService:
 
         try:
             # 5. Inicialização no TikTok
+            # Em contas privadas/sandbox, o TikTok exige SELF_ONLY para Direct Post no feed
+            privacy = "SELF_ONLY" if draft.privacy_level in ("PUBLIC_TO_EVERYONE", None, "") else draft.privacy_level
+
             post_info = {
                 "title": f"{draft.title} {draft.caption} {draft.hashtags}".strip(),
-                "privacy_level": draft.privacy_level,
+                "privacy_level": privacy,
                 "disable_comment": draft.disable_comment,
                 "disable_duet": draft.disable_duet,
                 "disable_stitch": draft.disable_stitch,
@@ -190,7 +193,7 @@ class PublisherService:
             status_res = self.tiktok_adapter.fetch_publish_status(token, publish_id)
             tiktok_status = status_res.get("status")
 
-            if tiktok_status == "PUBLISH_COMPLETE":
+            if tiktok_status in ("PUBLISH_COMPLETE", "SEND_TO_USER_INBOX"):
                 attempt.status = "PUBLISHED"
                 attempt.completed_at = get_current_time_utc()
                 post.status = "PUBLISHED"

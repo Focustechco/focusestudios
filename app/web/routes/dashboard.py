@@ -14,7 +14,8 @@ router = APIRouter()
 templates = Jinja2Templates(directory="app/web/templates")
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/dashboard", response_class=HTMLResponse)
+@router.get("/metrics", response_class=HTMLResponse)
 def get_dashboard(request: Request, db: Session = Depends(get_db)):
     cal_svc = CalendarService(db)
     metrics = cal_svc.get_dashboard_metrics()

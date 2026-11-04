@@ -58,7 +58,11 @@ class SyncService:
 
             for f_meta in files:
                 total_discovered += 1
-                # 1. Verificar se já existe pelo drive_file_id
+                # 1. Verificar se é documento proprietário não binário
+                if f_meta.mime_type and f_meta.mime_type.startswith("application/vnd.google-apps."):
+                    continue
+
+                # 2. Verificar se já existe pelo drive_file_id
                 existing_by_id = self.db.query(MediaAsset).filter_by(drive_file_id=f_meta.file_id).first()
                 if existing_by_id:
                     continue

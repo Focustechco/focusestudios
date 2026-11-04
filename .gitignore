@@ -12,4 +12,14 @@ storage/thumbnails/*
 !storage/thumbnails/.gitkeep
 storage/exports/*
 !storage/exports/.gitkeep
+secrets/*
+!secrets/.gitkeep
 .env
+data/
+*.log
+authenticate_google_drive.py
+check_folder_contents.py
+check_videos_folder.py
+verify_credentials.py
+publish_first_posts.py
+

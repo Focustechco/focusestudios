@@ -7,12 +7,29 @@
         <p>Programação em PostgreSQL no fuso <strong>America/Fortaleza</strong>. Disparo pontual via Celery Worker.</p>
     </div>
     <div class="top-actions">
+        <form action="/api/publish-now" method="POST" style="display:inline;">
+            <button type="submit" class="btn btn-warning" style="background:#ff7a00; border-color:#ff7a00; color:#fff; font-weight:700;">
+                <i class="fas fa-paper-plane" style="margin-right:6px;"></i>Disparar Próximos Agora
+            </button>
+        </form>
         <form action="/api/schedule-batch" method="POST" style="display:inline;">
             <button type="submit" class="btn btn-primary">Distribuir Próximos Aprovados</button>
         </form>
         <a href="/export/studio" class="btn btn-secondary">Exportar para TikTok Studio</a>
     </div>
 </div>
+
+{% if request.query_params.get('error') %}
+<div class="alert-banner" style="background-color: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; margin-bottom: 16px; padding: 12px 16px; border-radius: 8px;">
+    <strong>Aviso no Disparo:</strong> {{ request.query_params.get('error') }}
+</div>
+{% endif %}
+
+{% if request.query_params.get('published_count') or request.query_params.get('status') == 'PUBLISHED' %}
+<div class="alert-banner" style="background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7; margin-bottom: 16px; padding: 12px 16px; border-radius: 8px;">
+    <strong>Sucesso:</strong> Vídeo publicado com sucesso no TikTok!
+</div>
+{% endif %}
 
 <div class="alert-banner alert-demo" style="background-color: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); color: #93c5fd;">
     <strong>Aviso Arquitetural:</strong> A API oficial do TikTok não possui endpoint para a fila "Agendado" do TikTok Studio. Os posts ficam salvos no banco local e são publicados pelo worker no horário aprovado.
@@ -46,7 +63,11 @@
                         <span class="badge badge-{{ ev.status.lower() }}">{{ ev.status }}</span>
                     </td>
                     <td>
-                        {% if ev.status == 'SCHEDULED' %}
+                        {% if ev.status in ['SCHEDULED', 'NEEDS_REVIEW', 'FAILED', 'PROCESSING'] %}
+                        <form action="/api/publish-now" method="POST" style="display:inline; margin-right:4px;">
+                            <input type="hidden" name="post_id" value="{{ ev.id }}">
+                            <button type="submit" class="btn btn-primary btn-sm" style="background:#ff7a00; border-color:#ff7a00; font-weight:600;">Publicar Agora</button>
+                        </form>
                         <form action="/api/posts/{{ ev.id }}/cancel" method="POST" style="display:inline;">
                             <button type="submit" class="btn btn-danger btn-sm">Desagendar</button>
                         </form>

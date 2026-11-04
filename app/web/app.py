@@ -1,11 +1,14 @@
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import Base, engine, get_db_context
 from app.web.routes import (
+    inicio,
     dashboard,
     connections,
     library,
@@ -86,6 +89,7 @@ os.makedirs(static_dir, exist_ok=True)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Rotas
+app.include_router(inicio.router)
 app.include_router(dashboard.router)
 app.include_router(connections.router)
 app.include_router(library.router)
@@ -95,6 +99,28 @@ app.include_router(export_studio.router)
 app.include_router(history.router)
 app.include_router(settings_route.router)
 app.include_router(api.router)
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    ico_path = os.path.join(static_dir, "img", "favicon.ico")
+    if os.path.exists(ico_path):
+        return FileResponse(ico_path, media_type="image/x-icon")
+    return FileResponse(os.path.join(static_dir, "img", "favicon-32x32.png"), media_type="image/png")
+
+
+# Templates para páginas legais
+templates = Jinja2Templates(directory="app/web/templates")
+
+
+@app.get("/terms", response_class=HTMLResponse)
+async def terms_page(request: Request):
+    return templates.TemplateResponse(request=request, name="terms.html")
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy_page(request: Request):
+    return templates.TemplateResponse(request=request, name="privacy.html")
 
 
 @app.get("/healthz")

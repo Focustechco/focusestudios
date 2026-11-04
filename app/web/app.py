@@ -38,44 +38,47 @@ async def lifespan(app: FastAPI):
 
     # Seed inicial no modo DEMO se o banco estiver vazio
     if settings.OPERATION_MODE == "DEMO":
-        with get_db_context() as db:
-            # Garante conta TikTok DEMO
-            acc = db.query(Account).filter_by(open_id="demo_open_id").first()
-            if not acc:
-                acc = Account(
-                    open_id="demo_open_id",
-                    username="@focustech_demo",
-                    display_name="Focus Tech Oficial (DEMO)",
-                    avatar_url="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150",
-                    privacy_options="PUBLIC_TO_EVERYONE,MUTUAL_FOLLOW_FRIENDS,SELF_ONLY",
-                    is_eligible=True,
-                    eligibility_notes="Conta simulada para demonstração e testes."
-                )
-                acc.access_token = "mock_access_token_demo"
-                acc.refresh_token = "mock_refresh_token_demo"
-                db.add(acc)
-                db.commit()
+        try:
+            with get_db_context() as db:
+                # Garante conta TikTok DEMO
+                acc = db.query(Account).filter_by(open_id="demo_open_id").first()
+                if not acc:
+                    acc = Account(
+                        open_id="demo_open_id",
+                        username="@focustech_demo",
+                        display_name="Focus Tech Oficial (DEMO)",
+                        avatar_url="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150",
+                        privacy_options="PUBLIC_TO_EVERYONE,MUTUAL_FOLLOW_FRIENDS,SELF_ONLY",
+                        is_eligible=True,
+                        eligibility_notes="Conta simulada para demonstração e testes."
+                    )
+                    acc.access_token = "mock_access_token_demo"
+                    acc.refresh_token = "mock_refresh_token_demo"
+                    db.add(acc)
+                    db.commit()
 
-            # Se não houver vídeos, executa sincronização inicial de exemplo
-            asset_count = db.query(MediaAsset).count()
-            if asset_count == 0:
-                sync_svc = SyncService(db)
-                sync_svc.sync_drive_folder(settings.GOOGLE_DRIVE_FOLDER_ID)
-                inspect_svc = InspectionService(db)
-                inspect_svc.inspect_all_pending()
+                # Se não houver vídeos, executa sincronização inicial de exemplo
+                asset_count = db.query(MediaAsset).count()
+                if asset_count == 0:
+                    sync_svc = SyncService(db)
+                    sync_svc.sync_drive_folder(settings.GOOGLE_DRIVE_FOLDER_ID)
+                    inspect_svc = InspectionService(db)
+                    inspect_svc.inspect_all_pending()
 
-                # Aprova automaticamente alguns rascunhos iniciais e distribui no calendário
-                app_svc = ApprovalService(db)
-                from app.models.post_draft import PostDraft
-                drafts = db.query(PostDraft).limit(10).all()
-                for d in drafts:
-                    try:
-                        app_svc.approve_draft(d.id, approved_by="setup_demo")
-                    except Exception:
-                        pass
+                    # Aprova automaticamente alguns rascunhos iniciais e distribui no calendário
+                    app_svc = ApprovalService(db)
+                    from app.models.post_draft import PostDraft
+                    drafts = db.query(PostDraft).limit(10).all()
+                    for d in drafts:
+                        try:
+                            app_svc.approve_draft(d.id, approved_by="setup_demo")
+                        except Exception:
+                            pass
 
-                cal_svc = CalendarService(db)
-                cal_svc.schedule_approved_drafts(days_ahead=1)
+                    cal_svc = CalendarService(db)
+                    cal_svc.schedule_approved_drafts(days_ahead=1)
+        except Exception as e:
+            print(f"[Lifespan Seed] Aviso ao executar seed DEMO: {e}")
 
     yield
 

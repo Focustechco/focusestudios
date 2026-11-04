@@ -10,8 +10,9 @@ from app.services.calendar_service import CalendarService
 from app.models.scheduled_post import ScheduledPost
 from app.core.timezone import get_current_time_fortaleza, format_fortaleza
 
+from app.web.templates_env import templates
+
 router = APIRouter()
-templates = Jinja2Templates(directory="app/web/templates")
 
 
 @router.get("/dashboard", response_class=HTMLResponse)

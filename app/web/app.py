@@ -6,7 +6,11 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.database import Base, engine, get_db_context
+from app.database import Base, engine, get_db_context, init_db
+from app.web.templates_env import templates
+
+# Inicialização imediata de tabelas para compatibilidade total com cold starts do Vercel
+init_db()
 from app.web.routes import (
     inicio,
     dashboard,
@@ -109,8 +113,7 @@ async def favicon():
     return FileResponse(os.path.join(static_dir, "img", "favicon-32x32.png"), media_type="image/png")
 
 
-# Templates para páginas legais
-templates = Jinja2Templates(directory="app/web/templates")
+# Páginas legais (Termos de Serviço e Política de Privacidade para auditoria TikTok)
 
 
 @app.get("/terms", response_class=HTMLResponse)

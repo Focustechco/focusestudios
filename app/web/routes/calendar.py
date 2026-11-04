@@ -1,16 +1,14 @@
 from datetime import timedelta
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-
 from app.database import get_db
 from app.config import settings
 from app.services.calendar_service import CalendarService
 from app.core.timezone import get_current_time_fortaleza
+from app.web.templates_env import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/web/templates")
 
 
 @router.get("/calendar", response_class=HTMLResponse)

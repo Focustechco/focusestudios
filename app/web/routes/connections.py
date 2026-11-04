@@ -19,7 +19,7 @@ from app.adapters.tiktok.direct_post import TikTokDirectPostAdapter
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-templates = Jinja2Templates(directory="app/web/templates")
+from app.web.templates_env import templates
 
 
 @router.get("/connections", response_class=HTMLResponse)

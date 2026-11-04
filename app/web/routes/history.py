@@ -8,8 +8,9 @@ from app.config import settings
 from app.models.publish_attempt import PublishAttempt
 from app.models.audit_event import AuditEvent
 
+from app.web.templates_env import templates
+
 router = APIRouter()
-templates = Jinja2Templates(directory="app/web/templates")
 
 
 @router.get("/history", response_class=HTMLResponse)

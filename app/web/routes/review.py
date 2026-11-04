@@ -9,8 +9,9 @@ from app.config import settings
 from app.models.post_draft import PostDraft
 from app.models.account import Account
 
+from app.web.templates_env import templates
+
 router = APIRouter()
-templates = Jinja2Templates(directory="app/web/templates")
 
 
 @router.get("/review", response_class=HTMLResponse)

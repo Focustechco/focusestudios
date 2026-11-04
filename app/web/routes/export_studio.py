@@ -7,8 +7,9 @@ from app.database import get_db
 from app.config import settings
 from app.services.studio_exporter import StudioExporter
 
+from app.web.templates_env import templates
+
 router = APIRouter()
-templates = Jinja2Templates(directory="app/web/templates")
 
 
 @router.get("/export/studio", response_class=HTMLResponse)

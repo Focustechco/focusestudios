@@ -173,6 +173,7 @@ class CalendarService:
             events.append({
                 "id": post.id,
                 "draft_id": post.post_draft_id,
+                "asset_id": post.post_draft.media_asset_id if post.post_draft else None,
                 "title": post.post_draft.title if post.post_draft else "Sem título",
                 "caption": post.post_draft.caption if post.post_draft else "",
                 "status": post.status,
@@ -182,3 +183,94 @@ class CalendarService:
                 "privacy": post.post_draft.privacy_level if post.post_draft else "SELF_ONLY"
             })
         return events
+
+    def get_monthly_calendar_data(self, year: int, month: int) -> Dict[str, Any]:
+        """
+        Gera a estrutura completa para exibição em forma de grade de calendário mensal.
+        Inclui dias da semana (Dom a Sáb), semanas completas alinhadas e eventos por dia.
+        """
+        import calendar
+
+        MESES_PT = [
+            "", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+            "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+        ]
+
+        if month == 1:
+            prev_year, prev_month = year - 1, 12
+        else:
+            prev_year, prev_month = year, month - 1
+
+        if month == 12:
+            next_year, next_month = year + 1, 1
+        else:
+            next_year, next_month = year, month + 1
+
+        now_fortaleza = get_current_time_fortaleza()
+        today = now_fortaleza.date()
+
+        # Inicia a semana no Domingo (firstweekday=6)
+        cal = calendar.Calendar(firstweekday=6)
+        month_days = cal.monthdatescalendar(year, month)
+
+        grid_start = month_days[0][0]
+        grid_end = month_days[-1][-1]
+
+        # Busca eventos para toda a grade (inclusive dias de transição do mês)
+        events = self.list_calendar_events(grid_start, grid_end)
+
+        events_by_date: Dict[str, List[Dict[str, Any]]] = {}
+        for ev in events:
+            d_str = ev["date_fortaleza"]
+            if d_str not in events_by_date:
+                events_by_date[d_str] = []
+            events_by_date[d_str].append(ev)
+
+        weeks_data = []
+        for week in month_days:
+            week_days = []
+            for day_date in week:
+                d_str = day_date.strftime("%Y-%m-%d")
+                day_events = events_by_date.get(d_str, [])
+                is_current_month = (day_date.month == month)
+                is_today = (day_date == today)
+                is_past = (day_date < today)
+
+                target = settings.DAILY_POST_TARGET
+                count = len(day_events)
+                scheduled_count = sum(1 for e in day_events if e["status"] in ["SCHEDULED", "UPLOADING", "PROCESSING"])
+                published_count = sum(1 for e in day_events if e["status"] == "PUBLISHED")
+
+                week_days.append({
+                    "date": day_date,
+                    "date_str": d_str,
+                    "day_num": day_date.day,
+                    "is_current_month": is_current_month,
+                    "is_today": is_today,
+                    "is_past": is_past,
+                    "events": day_events,
+                    "total_events": count,
+                    "scheduled_count": scheduled_count,
+                    "published_count": published_count,
+                    "daily_target": target,
+                    "target_reached": (count >= target),
+                    "coverage_pct": min(100, int((count / max(target, 1)) * 100))
+                })
+            weeks_data.append(week_days)
+
+        month_prefix = f"{year}-{month:02d}"
+        total_month_posts = sum(len(evs) for d, evs in events_by_date.items() if d.startswith(month_prefix))
+
+        return {
+            "year": year,
+            "month": month,
+            "month_name": MESES_PT[month] if 1 <= month <= 12 else f"Mês {month}",
+            "prev_year": prev_year,
+            "prev_month": prev_month,
+            "next_year": next_year,
+            "next_month": next_month,
+            "today_str": today.strftime("%Y-%m-%d"),
+            "weeks": weeks_data,
+            "weekday_names": ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"],
+            "total_month_posts": total_month_posts
+        }

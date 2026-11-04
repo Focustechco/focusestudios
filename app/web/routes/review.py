@@ -40,7 +40,7 @@ def get_review(
         request=request,
         name="review.html",
         context={
-            "title": "Revisão & Consentimento",
+            "title": "Revisão e aprovação",
             "active_page": "review",
             "operation_mode": settings.OPERATION_MODE,
             "timezone": settings.TIMEZONE,

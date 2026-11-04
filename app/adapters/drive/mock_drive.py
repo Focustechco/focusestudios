@@ -61,12 +61,26 @@ class MockDriveAdapter(BaseDriveAdapter):
         return results, next_page
 
     def download_file(self, file_id: str, target_path: str) -> str:
-        """Gera ou copia um arquivo MP4 real e retorna seu SHA-256 único."""
+        """Gera ou copia o arquivo MP4 real específico do item e retorna seu SHA-256 único."""
         os.makedirs(os.path.dirname(target_path), exist_ok=True)
         
-        sample_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "web", "static", "video", "sample_preview.mp4")
+        # Mapeia o sample de 1 a 15 de acordo com o file_id
+        sample_idx = 1
+        if "mock_file_" in file_id:
+            try:
+                num = int(file_id.split("mock_file_")[1].split("_")[0])
+                sample_idx = ((num - 1) % 15) + 1
+            except Exception:
+                sample_idx = 1
+
+        sample_dir = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "web", "static", "video", "samples")
         )
+        sample_path = os.path.join(sample_dir, f"sample_{sample_idx:02d}.mp4")
+        if not os.path.exists(sample_path):
+            sample_path = os.path.abspath(
+                os.path.join(os.path.dirname(__file__), "..", "..", "web", "static", "video", "sample_preview.mp4")
+            )
         
         if os.path.exists(sample_path):
             with open(sample_path, "rb") as sf:

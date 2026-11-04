@@ -78,8 +78,10 @@ async def api_upload_video(file: UploadFile = File(...), db: Session = Depends(g
 def get_media_video(asset_id: str, db: Session = Depends(get_db)):
     asset = db.query(MediaAsset).filter_by(id=asset_id).first() if asset_id not in ("sample", "default") else None
     
-    # Fallback garantido empacotado no app
-    sample_fallback = os.path.abspath(
+    samples_dir = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "static", "video", "samples")
+    )
+    sample_preview = os.path.abspath(
         os.path.join(os.path.dirname(__file__), "..", "static", "video", "sample_preview.mp4")
     )
 
@@ -90,10 +92,26 @@ def get_media_video(asset_id: str, db: Session = Depends(get_db)):
         if os.path.exists(cand) and os.path.getsize(cand) > 10240:
             chosen_path = cand
 
-    # 2. Se não existir no disco ou for payload simulado < 10KB, usa o sample_preview.mp4
+    # 2. Se não existir no disco ou for payload simulado < 10KB, seleciona o vídeo específico da amostra
     if not chosen_path:
-        if os.path.exists(sample_fallback):
-            chosen_path = sample_fallback
+        sample_idx = 1
+        if asset and asset.drive_file_id and "mock_file_" in asset.drive_file_id:
+            try:
+                num = int(asset.drive_file_id.split("mock_file_")[1].split("_")[0])
+                sample_idx = ((num - 1) % 15) + 1
+            except Exception:
+                sample_idx = 1
+        elif asset:
+            try:
+                sample_idx = (abs(hash(asset.id)) % 15) + 1
+            except Exception:
+                sample_idx = 1
+
+        cand_sample = os.path.join(samples_dir, f"sample_{sample_idx:02d}.mp4")
+        if os.path.exists(cand_sample):
+            chosen_path = cand_sample
+        elif os.path.exists(sample_preview):
+            chosen_path = sample_preview
         elif asset and asset.local_storage_path and os.path.exists(os.path.abspath(asset.local_storage_path)):
             chosen_path = os.path.abspath(asset.local_storage_path)
         else:
@@ -102,7 +120,7 @@ def get_media_video(asset_id: str, db: Session = Depends(get_db)):
     return FileResponse(
         path=chosen_path,
         media_type="video/mp4",
-        filename=asset.name if asset else "sample_preview.mp4",
+        filename=asset.name if asset else "video.mp4",
         headers={"Accept-Ranges": "bytes"}
     )
 

@@ -78,24 +78,41 @@ async def lifespan(app: FastAPI):
                     cal_svc = CalendarService(db)
                     cal_svc.schedule_approved_drafts(days_ahead=1)
 
-                # Garante que os arquivos físicos de vídeo no disco existam e sejam MP4 válidos
-                sample_v_path = os.path.abspath(
+                # Garante que os arquivos físicos de vídeo no disco existam com seus vídeos específicos
+                samples_dir = os.path.abspath(
+                    os.path.join(os.path.dirname(__file__), "static", "video", "samples")
+                )
+                sample_preview_path = os.path.abspath(
                     os.path.join(os.path.dirname(__file__), "static", "video", "sample_preview.mp4")
                 )
-                if os.path.exists(sample_v_path):
-                    with open(sample_v_path, "rb") as f_samp:
-                        sample_bytes = f_samp.read()
-                    all_assets = db.query(MediaAsset).all()
-                    for a in all_assets:
-                        target = a.local_storage_path or os.path.join(settings.STORAGE_DIR, "media", f"{a.drive_file_id}_{a.name}")
-                        abs_p = os.path.abspath(target)
+                all_assets = db.query(MediaAsset).all()
+                for idx, a in enumerate(all_assets, 1):
+                    # Determina o vídeo de amostra correspondente (1 a 15)
+                    sample_idx = 1
+                    if a.drive_file_id and "mock_file_" in a.drive_file_id:
+                        try:
+                            num = int(a.drive_file_id.split("mock_file_")[1].split("_")[0])
+                            sample_idx = ((num - 1) % 15) + 1
+                        except Exception:
+                            sample_idx = ((idx - 1) % 15) + 1
+                    else:
+                        sample_idx = ((idx - 1) % 15) + 1
+
+                    cand_sample = os.path.join(samples_dir, f"sample_{sample_idx:02d}.mp4")
+                    chosen_src = cand_sample if os.path.exists(cand_sample) else sample_preview_path
+
+                    target = a.local_storage_path or os.path.join(settings.STORAGE_DIR, "media", f"{a.drive_file_id}_{a.name}")
+                    abs_p = os.path.abspath(target)
+                    if os.path.exists(chosen_src):
                         if not os.path.exists(abs_p) or os.path.getsize(abs_p) < 10240:
                             os.makedirs(os.path.dirname(abs_p), exist_ok=True)
+                            with open(chosen_src, "rb") as f_in:
+                                specific_bytes = f_in.read()
                             with open(abs_p, "wb") as f_out:
-                                f_out.write(sample_bytes + f"\n<!-- asset_id:{a.id} -->\n".encode("utf-8"))
+                                f_out.write(specific_bytes + f"\n<!-- asset_id:{a.id} -->\n".encode("utf-8"))
                             if not a.local_storage_path:
                                 a.local_storage_path = target
-                    db.commit()
+                db.commit()
         except Exception as e:
             print(f"[Lifespan Seed] Aviso ao executar seed DEMO: {e}")
 

@@ -77,6 +77,9 @@ def tiktok_oauth_login():
 
 
 @router.get("/connections/tiktok/callback")
+@router.get("/connections/tiktok/callback/")
+@router.get("/callback")
+@router.get("/callback/")
 def tiktok_oauth_callback(
     request: Request,
     code: str = Query(...),

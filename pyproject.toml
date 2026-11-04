@@ -1,0 +1,9 @@
+[project]
+name = "focus-publisher"
+version = "1.0.0"
+description = "Gerenciador interno para agendamento e publicacao de videos no TikTok"
+readme = "README.md"
+requires-python = ">=3.10"
+
+[tool.vercel]
+entrypoint = "app.web.app:app"

@@ -40,7 +40,9 @@ class Settings(BaseSettings):
     OVERDUE_TOLERANCE_MINUTES: int = 15  # Tolerância antes de marcar como atrasado/reagendar
 
     # Banco de Dados e Cache / Broker
-    DATABASE_URL: str = "sqlite:///./focus_publisher.db"
+    DATABASE_URL: str = Field(
+        default_factory=lambda: "sqlite:////tmp/focus_publisher.db" if os.environ.get("VERCEL") else "sqlite:///./focus_publisher.db"
+    )
     REDIS_URL: str = "redis://localhost:6379/0"
 
     # Google Drive

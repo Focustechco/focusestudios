@@ -89,8 +89,13 @@ app = FastAPI(
 
 # Arquivos estáticos
 static_dir = os.path.join(os.path.dirname(__file__), "static")
-os.makedirs(static_dir, exist_ok=True)
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
+if not os.path.isdir(static_dir):
+    try:
+        os.makedirs(static_dir, exist_ok=True)
+    except Exception:
+        pass
+if os.path.isdir(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Rotas
 app.include_router(inicio.router)
@@ -118,12 +123,26 @@ async def favicon():
 
 @app.get("/terms", response_class=HTMLResponse)
 async def terms_page(request: Request):
-    return templates.TemplateResponse(request=request, name="terms.html")
+    try:
+        return templates.TemplateResponse(request=request, name="terms.html")
+    except Exception:
+        terms_path = os.path.join(os.path.dirname(__file__), "templates", "terms.html")
+        if os.path.exists(terms_path):
+            with open(terms_path, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
+        return HTMLResponse(content="<h1>Termos de Serviço</h1><p>Focus Publisher</p>")
 
 
 @app.get("/privacy", response_class=HTMLResponse)
 async def privacy_page(request: Request):
-    return templates.TemplateResponse(request=request, name="privacy.html")
+    try:
+        return templates.TemplateResponse(request=request, name="privacy.html")
+    except Exception:
+        privacy_path = os.path.join(os.path.dirname(__file__), "templates", "privacy.html")
+        if os.path.exists(privacy_path):
+            with open(privacy_path, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
+        return HTMLResponse(content="<h1>Política de Privacidade</h1><p>Focus Publisher</p>")
 
 
 @app.get("/healthz")

@@ -41,7 +41,11 @@ class Settings(BaseSettings):
 
     # Banco de Dados e Cache / Broker
     DATABASE_URL: str = Field(
-        default_factory=lambda: "sqlite:////tmp/focus_publisher.db" if os.environ.get("VERCEL") else "sqlite:///./focus_publisher.db"
+        default_factory=lambda: (
+            "sqlite:////tmp/focus_publisher.db"
+            if (os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME") or not os.access(".", os.W_OK))
+            else "sqlite:///./focus_publisher.db"
+        )
     )
     REDIS_URL: str = "redis://localhost:6379/0"
 
@@ -65,7 +69,13 @@ class Settings(BaseSettings):
     AI_API_KEY: str = ""
 
     # Armazenamento e Limites
-    STORAGE_DIR: str = "./storage"
+    STORAGE_DIR: str = Field(
+        default_factory=lambda: (
+            "/tmp/storage"
+            if (os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME") or not os.access(".", os.W_OK))
+            else "./storage"
+        )
+    )
     MAX_FILE_SIZE_BYTES: int = 1024 * 1024 * 500  # 500 MB
     TEMP_CLEANUP_DAYS: int = 7
 
@@ -75,7 +85,12 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-os.makedirs(settings.STORAGE_DIR, exist_ok=True)
-os.makedirs(os.path.join(settings.STORAGE_DIR, "media"), exist_ok=True)
-os.makedirs(os.path.join(settings.STORAGE_DIR, "thumbnails"), exist_ok=True)
-os.makedirs(os.path.join(settings.STORAGE_DIR, "exports"), exist_ok=True)
+
+# Cria pastas de armazenamento apenas se o sistema permitir escrita (evita erro em ambientes read-only como Vercel)
+try:
+    os.makedirs(settings.STORAGE_DIR, exist_ok=True)
+    os.makedirs(os.path.join(settings.STORAGE_DIR, "media"), exist_ok=True)
+    os.makedirs(os.path.join(settings.STORAGE_DIR, "thumbnails"), exist_ok=True)
+    os.makedirs(os.path.join(settings.STORAGE_DIR, "exports"), exist_ok=True)
+except Exception:
+    pass

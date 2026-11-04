@@ -31,7 +31,7 @@
                     <td><strong>{{ att.scheduled_post.post_draft.title if att.scheduled_post and att.scheduled_post.post_draft else 'N/A' }}</strong></td>
                     <td>#{{ att.attempt_number }}</td>
                     <td style="font-family: monospace; font-size:12px;">{{ att.publish_id or '-' }}</td>
-                    <td><span class="badge badge-{{ att.status.lower() }}">{{ att.status }}</span></td>
+                    <td><span class="badge badge-{{ att.status.lower() }}">{{ att.status | status_pt }}</span></td>
                     <td style="font-size:12px; color: {% if att.status == 'FAILED' %}#ef4444{% else %}var(--text-sub){% endif %};">
                         {{ att.error_message or 'Sucesso na comunicação' }}
                     </td>

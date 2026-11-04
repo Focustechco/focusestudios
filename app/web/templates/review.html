@@ -12,7 +12,7 @@
 <div class="card" style="border: 1px solid var(--focus-orange);">
     <div class="card-header" style="background-color: var(--focus-orange-dim);">
         <h3 class="card-title">Editando Rascunho: {{ selected_draft.media_asset.name }}</h3>
-        <span class="badge badge-{{ selected_draft.status.lower() }}">{{ selected_draft.status }}</span>
+        <span class="badge badge-{{ selected_draft.status.lower() }}">{{ selected_draft.status | status_pt }}</span>
     </div>
     <div style="padding: 24px;">
         <!-- Player de Vídeo em Destaque na Revisão -->
@@ -52,7 +52,7 @@
                         <select name="privacy_level" class="form-control">
                             {% for opt in privacy_options %}
                             <option value="{{ opt }}" {% if selected_draft.privacy_level == opt %}selected{% endif %}>
-                                {{ opt }}
+                                {{ opt | privacy_pt }}
                             </option>
                             {% endfor %}
                         </select>
@@ -142,8 +142,8 @@
                         <div style="font-weight:600;">{{ draft.title }}</div>
                         <div style="font-size:12px; color:var(--text-sub);">{{ draft.caption[:50] }}...</div>
                     </td>
-                    <td><span class="badge badge-ready">{{ draft.privacy_level }}</span></td>
-                    <td><span class="badge badge-{{ draft.status.lower() }}">{{ draft.status }}</span></td>
+                    <td><span class="badge badge-ready">{{ draft.privacy_level | privacy_pt }}</span></td>
+                    <td><span class="badge badge-{{ draft.status.lower() }}">{{ draft.status | status_pt }}</span></td>
                     <td>
                         {% if draft.status == 'APPROVED' %}
                         <span class="badge badge-published">Assinado (Ativo)</span>

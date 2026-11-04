@@ -216,7 +216,7 @@
                 <h3 class="project-card-title" title="{{ a.name }}">{{ a.name }}</h3>
                 
                 <div class="project-card-meta">
-                    <span class="badge badge-status badge-{{ a.status.lower() }}">{{ a.status }}</span>
+                    <span class="badge badge-status badge-{{ a.status.lower() }}">{{ a.status | status_pt }}</span>
                     <span class="project-update-time">{{ a.size_mb }} MB</span>
                 </div>
 
@@ -304,7 +304,7 @@
                             {{ asset.sha256_hash[:16] }}...
                         </td>
                         <td>
-                            <span class="badge badge-{{ asset.status.lower() }}">{{ asset.status }}</span>
+                            <span class="badge badge-{{ asset.status.lower() }}">{{ asset.status | status_pt }}</span>
                         </td>
                         <td>
                             <div style="display:flex; gap:8px;">
@@ -366,7 +366,7 @@
                 </div>
                 <div class="meta-item">
                     <span class="meta-label">Status:</span>
-                    <span class="badge" id="libMetaStatus">DISCOVERED</span>
+                    <span class="badge" id="libMetaStatus">DESCOBERTO</span>
                 </div>
             </div>
         </div>
@@ -493,7 +493,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (libMetaResolution) libMetaResolution.textContent = videoResolution;
                 if (libMetaDuration) libMetaDuration.textContent = videoDuration;
                 if (libMetaStatus) {
-                    libMetaStatus.textContent = videoStatus;
+                    libMetaStatus.textContent = typeof translateStatus === 'function' ? translateStatus(videoStatus) : videoStatus;
                     libMetaStatus.className = "badge badge-" + videoStatus.toLowerCase();
                 }
 

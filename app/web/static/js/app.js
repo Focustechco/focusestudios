@@ -31,6 +31,47 @@ function openModal(modalId) {
     }
 }
 
+// Mapas de Tradução de Status e Privacidade para PT-BR
+const STATUS_LABELS_PT = {
+    'SCHEDULED': 'AGENDADO',
+    'PUBLISHED': 'PUBLICADO',
+    'APPROVED': 'APROVADO',
+    'DISCOVERED': 'DESCOBERTO',
+    'DRAFT': 'RASCUNHO',
+    'NEEDS_REVIEW': 'EM REVISÃO',
+    'VALIDATING': 'VALIDANDO',
+    'READY': 'PRONTO',
+    'FAILED': 'FALHA',
+    'CANCELLED': 'CANCELADO',
+    'PROCESSING': 'PROCESSANDO',
+    'UPLOADING': 'ENVIANDO',
+    'PENDING': 'PENDENTE',
+    'REJECTED': 'REJEITADO',
+    'ACTIVE': 'ATIVO',
+    'INACTIVE': 'INATIVO'
+};
+
+const PRIVACY_LABELS_PT = {
+    'PUBLIC_TO_EVERYONE': 'PÚBLICO',
+    'MUTUAL_FOLLOW_FRIENDS': 'AMIGOS MÚTUOS',
+    'FOLLOWER_OF_CREATOR': 'SEGUIDORES',
+    'SELF_ONLY': 'SOMENTE EU',
+    'PUBLIC': 'PÚBLICO',
+    'PRIVATE': 'PRIVADO',
+    'FRIENDS': 'AMIGOS'
+};
+
+function translateStatus(status) {
+    if (!status) return "";
+    return STATUS_LABELS_PT[status.toUpperCase()] || status;
+}
+
+function translatePrivacy(privacy) {
+    if (!privacy) return "";
+    return PRIVACY_LABELS_PT[privacy.toUpperCase()] || privacy;
+}
+
+
 // Sidebar Smooth Collapse Controller
 document.addEventListener("DOMContentLoaded", function () {
     const sidebar = document.querySelector(".sidebar");
@@ -379,7 +420,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (previewMetaResolution) previewMetaResolution.textContent = videoResolution;
                 if (previewMetaDuration) previewMetaDuration.textContent = videoDuration;
                 if (previewMetaStatus) {
-                    previewMetaStatus.textContent = videoStatus;
+                    previewMetaStatus.textContent = translateStatus(videoStatus);
                     previewMetaStatus.className = "badge badge-" + videoStatus.toLowerCase();
                 }
                 if (btnPreviewGoReview && draftId) {

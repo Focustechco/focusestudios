@@ -38,7 +38,7 @@
                 <tr>
                     <td style="font-weight: 700; color: #fff;">{{ item.time_fortaleza }}</td>
                     <td><strong>{{ item.video_name }}</strong></td>
-                    <td><span class="badge badge-ready">{{ item.privacy_level }}</span></td>
+                    <td><span class="badge badge-ready">{{ item.privacy_level | privacy_pt }}</span></td>
                     <td style="max-width: 380px;">
                         <textarea class="form-control" rows="2" readonly id="caption_{{ loop.index }}" style="font-size:12px;">{{ item.full_caption }}</textarea>
                     </td>

@@ -25,7 +25,7 @@
                 <div class="modules-popover" id="modulesPopover" role="menu" aria-label="Menu de Navegação dos Módulos">
                     <div class="modules-popover-header">
                         <span>Módulos do Sistema</span>
-                        <span class="badge badge-primary">{{ operation_mode }}</span>
+                        <span class="badge badge-primary">{{ operation_mode | status_pt }}</span>
                     </div>
                     <div class="modules-grid">
                         <a href="/inicio" class="module-item active" role="menuitem">
@@ -379,7 +379,7 @@
                             <div class="project-card-body">
                                 <h3 class="project-card-title" title="{{ p.title }}">{{ p.title }}</h3>
                                 <div class="project-card-meta">
-                                    <span class="badge badge-status badge-{{ p.status.lower() }}">{{ p.status }}</span>
+                                    <span class="badge badge-status badge-{{ p.status.lower() }}">{{ p.status | status_pt }}</span>
                                     <span class="project-update-time">{{ p.updated_time_short }}</span>
                                 </div>
                             </div>
@@ -450,7 +450,7 @@
                                 </svg>
                                 <span class="channel-name">{{ post.channel_name }}</span>
                             </div>
-                            <span class="badge badge-status badge-{{ post.status.lower() }}">{{ post.status }}</span>
+                            <span class="badge badge-status badge-{{ post.status.lower() }}">{{ post.status | status_pt }}</span>
                         </div>
                         <h4 class="post-item-title" title="{{ post.title }}">{{ post.title }}</h4>
                         <div class="post-item-footer">
@@ -601,7 +601,7 @@
                 </div>
                 <div class="meta-item">
                     <span class="meta-label">Status:</span>
-                    <span class="badge" id="previewMetaStatus">APPROVED</span>
+                    <span class="badge" id="previewMetaStatus">APROVADO</span>
                 </div>
                 <div class="meta-item meta-source-item">
                     <svg width="14" height="14" viewBox="0 0 87.3 78" fill="none" style="display:inline-block; vertical-align:middle; margin-right:4px;">

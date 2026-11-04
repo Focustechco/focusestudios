@@ -632,6 +632,32 @@ tr:hover td {
   color: #a78bfa;
 }
 
+.badge-approved {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.badge-draft {
+  background-color: rgba(156, 163, 175, 0.15);
+  color: #9ca3af;
+}
+
+.badge-discovered {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.badge-needs_review {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.badge-validating {
+  background-color: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
+}
+
+
 /* Formulários */
 .form-group {
   margin-bottom: 16px;
